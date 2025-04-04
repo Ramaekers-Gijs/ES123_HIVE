@@ -1,3 +1,5 @@
+using GLMakie 
+
 include("Board.jl")
 include("Piece.jl")
 include("UI.jl")
