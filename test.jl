@@ -1,2 +1,2 @@
-test = "HIVE"
+test = "test"
 println(test)
