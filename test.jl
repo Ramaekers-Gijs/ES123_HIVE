@@ -1,2 +1,2 @@
-sdfqqdbqrtest = "HIVE"
+test = "HIVE"
 println(test)
