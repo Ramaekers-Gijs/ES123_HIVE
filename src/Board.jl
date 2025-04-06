@@ -14,15 +14,15 @@ end
 
 function HexCoord2AbsCoord(HexCoord::HexCoord)
     x = 1035 + 75 * HexCoord.x
-    iseven(HexCoord.x) ? y = floor(Int,540 + sqrt(3)*25*2*(-1)*HexCoord.y) : y = floor(Int,540 + sqrt(3)*25*(2*(-1)*HexCoord.y+1))
+    iseven(HexCoord.x) ? y = trunc(Int,540 + sqrt(3)*25*2*(-1)*HexCoord.y) : y = trunc(Int,540 + sqrt(3)*25*(2*(-1)*HexCoord.y-1))
     return x,y
 end
 
 function DrawHex(center::HexCoord)
     theta = LinRange(0,2*pi,7) 
 
-    x = floor.(Int,HexCoord2AbsCoord(center)[1] .+ cos.(theta) .* 50)
-    y = floor.(Int,HexCoord2AbsCoord(center)[2] .+ sin.(theta) .* 50)
+    x = trunc.(Int,HexCoord2AbsCoord(center)[1] .+ cos.(theta) .* 50)
+    y = trunc.(Int,HexCoord2AbsCoord(center)[2] .+ sin.(theta) .* 50)
 
     for i in 1:length(x)-1
         draw(Line(x[i],y[i],x[i+1],y[i+1]))
@@ -42,11 +42,23 @@ function DrawGrid(x,y)
 end
 
 function approx(x,y)
-    aproxx = trunc((x-1035+50-12)/75)
-    aproxy = trunc((y-540+sqrt(3)*25)/(50*sqrt(3)))
+    approxx = trunc(Int,(x-1035+50-12)/75)
+    iseven(approxx) ? approxy = trunc(Int,(y-540+sqrt(3)*25)/(50*sqrt(3))) : approxy = trunc(Int,(y-540)/(50*sqrt(3)))
+    return approxx,approxy
 end
-#@info approx(0,540)
+
+function on_mouse_down(g::Game,pos)
+    ap = approx(pos[1],pos[2])
+    AbsAp = HexCoord2AbsCoord(HexCoord(ap[1],ap[2]))
+    @info AbsAp
+    @info pos
+    dist = sqrt((AbsAp[1]-pos[1])^2+(AbsAp[2]-pos[2])^2)
+    if dist < 25*sqrt(3)
+        draw(Circle(pos[1],pos[2],20))
+        println(string(pos[1])*"   "*string(pos[2]))
+    end
+end
 # GameZero draw function
 function draw(g::Game)
-    DrawHex(HexCoord(5,5))
+    DrawGrid(10,10)
 end
