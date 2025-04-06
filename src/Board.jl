@@ -14,7 +14,7 @@ end
 
 function HexCoord2AbsCoord(HexCoord::HexCoord)
     x = 1035 + 75 * HexCoord.x
-    iseven(HexCoord.x) ? y = floor(Int,540 + sqrt(3)*25*2*HexCoord.y) : y = floor(Int,540 + sqrt(3)*25*(2*HexCoord.y+1))
+    iseven(HexCoord.x) ? y = floor(Int,540 + sqrt(3)*25*2*(-1)*HexCoord.y) : y = floor(Int,540 + sqrt(3)*25*(2*(-1)*HexCoord.y+1))
     return x,y
 end
 
@@ -41,8 +41,12 @@ function DrawGrid(x,y)
     end 
 end
 
-
+function approx(x,y)
+    aproxx = trunc((x-1035+50-12)/75)
+    aproxy = trunc((y-540+sqrt(3)*25)/(50*sqrt(3)))
+end
+#@info approx(0,540)
 # GameZero draw function
 function draw(g::Game)
-    DrawGrid(7,7)
+    DrawHex(HexCoord(5,5))
 end
