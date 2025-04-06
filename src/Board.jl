@@ -41,6 +41,7 @@ function DrawGrid(x,y)
     end 
 end
 
+
 # GameZero draw function
 function draw(g::Game)
     DrawGrid(7,7)
