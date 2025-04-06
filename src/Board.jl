@@ -1,5 +1,6 @@
-using GLMakie
-
 module board
-end
 
+using GameZero
+export hive_board, hexagon
+
+end
