@@ -1,20 +1,17 @@
 using GameZero, Colors
 
-# initialize screen
-
 WIDTH = 1920
 HEIGHT = 1080
 BACKGROUND = colorant"antiquewhite"
 
-# define initial state of actors
 struct HexCoord 
-    x::Int64
-    y::Int64
+    x::Int
+    y::Int
 end 
 
 function HexCoord2AbsCoord(HexCoord::HexCoord)
     x = 1035 + 75 * HexCoord.x
-    iseven(HexCoord.x) ? y = trunc(Int,540 + sqrt(3)*25*2*(-1)*HexCoord.y) : y = trunc(Int,540 + sqrt(3)*25*(2*(-1)*HexCoord.y-1))
+    iseven(HexCoord.x) ? y = trunc(Int,540 + sqrt(3)*(-50)*HexCoord.y) : y = trunc(Int,540 + sqrt(3)*25*(-2*HexCoord.y-1))
     return x,y
 end
 
@@ -42,23 +39,23 @@ function DrawGrid(x,y)
 end
 
 function approx(x,y)
-    approxx = trunc(Int,(x-1035+50-12)/75)
-    iseven(approxx) ? approxy = trunc(Int,(y-540+sqrt(3)*25)/(50*sqrt(3))) : approxy = trunc(Int,(y-540)/(50*sqrt(3)))
+    approxx = floor(Int,(x-1035+50-12)/75)
+    iseven(approxx) ? approxy = floor(Int,(-y+540+sqrt(3)*25)/(50*sqrt(3))) : approxy = floor(Int,(-y+540)/(50*sqrt(3)))
     return approxx,approxy
 end
 
 function on_mouse_down(g::Game,pos)
     ap = approx(pos[1],pos[2])
-    AbsAp = HexCoord2AbsCoord(HexCoord(ap[1],ap[2]))
-    @info AbsAp
-    @info pos
-    dist = sqrt((AbsAp[1]-pos[1])^2+(AbsAp[2]-pos[2])^2)
+    AbsAp = HexCoord2AbsCoord(HexCoord(ap[1],ap[2])) #approximation can be wrong because of the hexagonal shape of the tiles 
+    dist = sqrt((AbsAp[1]-pos[1])^2+(AbsAp[2]-pos[2])^2) 
     if dist < 25*sqrt(3)
-        draw(Circle(pos[1],pos[2],20))
-        println(string(pos[1])*"   "*string(pos[2]))
+        println("you clicked ("*string(ap[1])*","*string(ap[2])*")")
     end
 end
+
 # GameZero draw function
 function draw(g::Game)
     DrawGrid(10,10)
+    draw(Line(0,540,1920,540)) #not permantent for testing
+    draw(Line(1035,0,1035,1080))#not permantent for testing
 end
