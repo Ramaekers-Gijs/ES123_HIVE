@@ -1,6 +1,6 @@
 import Pkg
 Pkg.add("GameZero")
 
-using GameZero, Colors
+using GameZero
 
 rungame("Board.jl")
