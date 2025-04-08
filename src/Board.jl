@@ -78,7 +78,7 @@ end
 function Move(HexCoord::HexCoord,Piece::Piece)
     PosMoves = CanMove(HexCoord::HexCoord,Piece::Piece)
     EndPos = makeclickable(PosMoves)
-    place(EndPos)
+    place(EndPos,Piece)
 end
 
 function place(HexCoord::HexCoord,Piece::Piece)
@@ -89,7 +89,9 @@ function place(HexCoord::HexCoord,Piece::Piece)
     end
     a = HexCoord2AbsCoord(HexCoord)
     pic = Actor(string(Piece.soort)*".png", scale=[1/8,1/8], position =  Rect(a[1]-32,a[2]-32,512,512)) #de ingebouwde functie center gaat kapot bij scaling
-    draw(pic)
+    Bord{HexCoord} = Piece
+    return pic
+    #draw(pic) comment export the variable so that it can be called in the draw function 
 end
 
 # GameZero draw function
