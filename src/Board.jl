@@ -56,6 +56,11 @@ end
 
 function on_mouse_down(g::Game,pos) #can be done with squares is easier but less precise
     if pos[1] > 200 
+        if IsSelected
+
+        else
+
+        end
         #ClickInField(pos)
     elseif pos[1] < 200
         #ClickOutField()
@@ -77,17 +82,16 @@ end
 
 function Move(HexCoord::HexCoord,Piece::Piece)
     PosMoves = CanMove(HexCoord::HexCoord,Piece::Piece)
-    EndPos = makeclickable(PosMoves)
-    place(EndPos,Piece)
+    makeclickable(PosMoves)
 end
 
 function place(HexCoord::HexCoord,Piece::Piece)
+    a = HexCoord2AbsCoord(HexCoord)
     if mod(Piece.player, 10) == 1 
-        draw(Rect((1000,520),(100,100)), colorant"red",fill=true) #draw black Hex 
+        draw(Rect((a[],520),(100,100)), colorant"black",fill=true) #draw black Hex 
     else
         #draw white Hex 
     end
-    a = HexCoord2AbsCoord(HexCoord)
     pic = Actor(string(Piece.soort)*".png", scale=[1/8,1/8], position =  Rect(a[1]-32,a[2]-32,512,512)) #de ingebouwde functie center gaat kapot bij scaling
     Bord{HexCoord} = Piece
     return pic
@@ -96,7 +100,6 @@ end
 
 # GameZero draw function
 function draw(g::Game)
-    place(HexCoord(0,0),Piece(1,1))
     DrawGrid(10,10)
     draw(Line(0,540,1920,540)) #not permantent for testing
     draw(Line(1035,0,1035,1080))#not permantent for testing
