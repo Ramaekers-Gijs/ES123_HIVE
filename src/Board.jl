@@ -53,14 +53,13 @@ function approx(x,y) #kanmet collide
     return HexCoord(approxx,approxy)
 end
 
-
 function on_mouse_down(g::Game,pos) #can be done with squares is easier but less precise
     if pos[1] > 200 
-        if IsSelected
+        #if IsSelected
 
-        else
+        #else
 
-        end
+        #end
         #ClickInField(pos)
     elseif pos[1] < 200
         #ClickOutField()
@@ -85,10 +84,29 @@ function Move(HexCoord::HexCoord,Piece::Piece)
     makeclickable(PosMoves)
 end
 
+function CanMove(HexCoord::HexCoord,Piece::Piece)
+    if Piece.soort == 1
+        array = CanMoveAnt(HexCoord::HexCoord,Piece::Piece)
+    elseif Piece.soort == 2
+        array = CanMoveBeetle(HexCoord::HexCoord,Piece::Piece)
+    elseif Piece.soort == 3
+        array = CanMoveGrasshopper(HexCoord::HexCoord,Piece::Piece)
+    elseif Piece.soort == 4
+        array = CanMoveQueen(HexCoord::HexCoord,Piece::Piece)
+    elseif Piece.soort == 5
+        array = CanMoveSpider(HexCoord::HexCoord,Piece::Piece)
+    end
+    return array
+end
+
+function CanMoveQueen(HexCoord::HexCoord,Piece::Piece)
+    
+end
+
 function place(HexCoord::HexCoord,Piece::Piece)
     a = HexCoord2AbsCoord(HexCoord)
     if mod(Piece.player, 10) == 1 
-        draw(Rect((a[],520),(100,100)), colorant"black",fill=true) #draw black Hex 
+        square = Actor(Rect((a[],520),(100,100)), colorant"black",fill=true) #draw black Hex 
     else
         #draw white Hex 
     end
@@ -96,6 +114,39 @@ function place(HexCoord::HexCoord,Piece::Piece)
     Bord{HexCoord} = Piece
     return pic
     #draw(pic) comment export the variable so that it can be called in the draw function 
+end
+
+function is_hive_connected(board::Dict{Tuple{Int, Int}, String}, exclude::Tuple{Int, Int})
+    # Hex directions
+    directions = [(0, 1), (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1)]
+
+    # Copy board and remove the piece we're simulating as removed
+    temp_board = Dict(board)
+    delete!(temp_board, exclude)
+
+    positions = collect(keys(temp_board))
+    if length(positions) ≤ 1
+        return true
+    end
+
+    visited = Set{Tuple{Int, Int}}()
+    stack = [positions[1]]  # Start DFS from one random position
+
+    while !isempty(stack)
+        current = pop!(stack)
+        push!(visited, current)
+        @info visited 
+        for (dx, dy) in directions
+            neighbor = (current[1] + dx, current[2] + dy)
+            @info neighbor
+            if haskey(temp_board, neighbor) && !(neighbor in visited)
+                push!(stack, neighbor)
+            end
+        end
+    end
+    @info visited
+    @info positions
+    return length(visited) == length(positions)
 end
 
 # GameZero draw function
