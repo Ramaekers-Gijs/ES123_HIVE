@@ -16,7 +16,7 @@ struct Piece
     player::Int #1 of 2
 end
 
-Bord = Dict{Tuple{Int, Int}, Piece}()
+const Bord = Dict{Tuple{Int, Int}, Piece}()
 
 const directions_even = [(0, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0)]
 const directions_uneven = [(0, 1), (1, 1), (1, 0), (0, -1), (-1, 0), (-1, 1)]
@@ -53,56 +53,27 @@ end
 function approx(x,y) #kanmet collide #af
     approxx = floor(Int,(x-1035+50-12)/75)
     iseven(approxx) ? approxy = floor(Int,(-y+540+sqrt(3)*25)/(50*sqrt(3))) : approxy = floor(Int,(-y+540)/(50*sqrt(3)))
-    return HexCoord(approxx,approxy)
+    return (approxx,approxy)
 end
 
 function on_mouse_down(g::Game,pos) #can be done with squares is easier but less precise
     if pos[1] > 200 
-        #if IsSelected
-
-        #else
-
-        #end
-        #ClickInField(pos)
+        ap = approx(pos[1],pos[2])
+        apAbs = HexCoord2AbsCoord(ap)
+        dist = sqrt((pos[1]-apAbs[1])^2+(pos[2]-apAbs[2])^2)
+        if  dist < 25 * sqrt(3)
+            if haskey(ap, Bord)
+                #move the piece
+            else
+                #place a piece 
+            end
+        end
     elseif pos[1] < 200
         #ClickOutField()
     end
 end
 
-function ClickInField(pos)
-    ap = approx(pos[1],pos[2])
-    apAbs = HexCoord2AbsCoord(ap)
-    dist = sqrt((pos[1]-apAbs[1])^2+(pos[2]-apAbs[2])^2)
-    if dist < 25 * sqrt(3)
-        if haskey(Bord,ap)
-            Move(ap,key(ap)) #if there is a piece there
-        else 
-            EmptySpaceUI(ap) #if there is no piece there 
-        end
-    end
-end
-
-function Move(HexCoord::Tuple{Int, Int},Piece::Piece) #input in hexcoord
-    PosMoves = CanMove(HexCoord::HexCoord,Piece::Piece)
-    makeclickable(PosMoves)
-end
-
-function CanMove(HexCoord::Tuple{Int, Int},Piece::Piece) #input in hexcoord
-    if Piece.soort == 1
-        array = CanMoveAnt(HexCoord::HexCoord,Piece::Piece)
-    elseif Piece.soort == 2
-        array = CanMoveBeetle(HexCoord::HexCoord,Piece::Piece)
-    elseif Piece.soort == 3
-        array = CanMoveGrasshopper(HexCoord::HexCoord,Piece::Piece)
-    elseif Piece.soort == 4
-        array = CanMoveQueen(HexCoord::HexCoord,Piece::Piece)
-    elseif Piece.soort == 5
-        array = CanMoveSpider(HexCoord::HexCoord,Piece::Piece)
-    end
-    return array
-end
-
-function place(HexCoord::HexCoord,Piece::Piece)
+function place(HexCoord::Tuple{Int, Int},Piece::Piece) #input in hexcoord
     a = HexCoord2AbsCoord(HexCoord)
     if mod(Piece.player, 10) == 1 
         square = Actor(Rect((a[],520),(100,100)), colorant"black",fill=true) #draw black Hex 
@@ -115,9 +86,13 @@ function place(HexCoord::HexCoord,Piece::Piece)
     #draw(pic) comment export the variable so that it can be called in the draw function 
 end
 
-function is_hive_connected(board::Dict{Tuple{Int, Int}, String}, exclude::Tuple{Int, Int}) #input in hexcoord
+"""
+LOGIC
+"""
+
+function is_hive_connected(exclude::Tuple{Int, Int}) #input in hexcoord
     # Copy board and remove the piece we're simulating as removed
-    temp_board = Dict(board)
+    temp_board = Dict(Bord)
     delete!(temp_board, exclude)
 
     positions = collect(keys(temp_board))
@@ -154,7 +129,46 @@ function is_slidable(from::Tuple{Int, Int}, to::Tuple{Int, Int}) #input in hexco
     left_pos = (from[1] + left[1], from[2] + left[2])
     right_pos = (from[1] + right[1], from[2] + right[2])
 
-    return !(haskey(board, left_pos) && haskey(board, right_pos))
+    return !(haskey(Bord, left_pos) && haskey(Bord, right_pos))
+end
+
+function CanMoveQueen(from::Tuple{Int, Int}) #input in hexcoord
+    if !(is_hive_connected(from))
+        return
+    end
+    posibilities = []
+    iseven(from[1]) ? directions = directions_even : directions = directions_uneven
+    for (x,y) in directions
+        to = (from[1] + x, from[2] + y)
+        if !(haskey(Bord, to)) && is_slidable(from,to)
+            push!(posibilities, to)
+        end
+    end
+    return posibilities
+end
+
+const Bord = Dict(
+    (0, 0) => "queen",
+    (0, 1) => "ant",       # target
+    (-1, 0) => "beetle",   # left neighbor
+    (1, 0) => "spider"     # right neighbor
+)
+
+CanMoveQueen((0,0))
+
+function CanMove(HexCoord::Tuple{Int, Int},Piece::Piece) #input in hexcoord #check if it is your piece 
+    if Piece.soort == 1
+        array = CanMoveAnt(HexCoord::Tuple{Int, Int},Piece::Piece) #input in hexcoord
+    elseif Piece.soort == 2
+        array = CanMoveBeetle(HexCoord::Tuple{Int, Int},Piece::Piece) #input in hexcoord
+    elseif Piece.soort == 3
+        array = CanMoveGrasshopper(HexCoord::Tuple{Int, Int},Piece::Piece) #input in hexcoord
+    elseif Piece.soort == 4
+        array = CanMoveQueen(HexCoord::Tuple{Int, Int},Piece::Piece) #input in hexcoord
+    elseif Piece.soort == 5
+        array = CanMoveSpider(HexCoord::Tuple{Int, Int},Piece::Piece) #input in hexcoord
+    end
+    return array
 end
 
 # GameZero draw function
