@@ -18,6 +18,13 @@ struct Piece
     player::Int #1 white of 2 black
 end
 
+mutable struct selected
+    bool::Bool
+    HexCoord::Tuple{Int,Int}
+end
+
+const BordOpt = Dict{Tuple{Int, Int}, Piece}()
+
 const Bord = Dict{Tuple{Int, Int}, Piece}(
     (0, 0)   => Piece(4, 1),  # Queen Bee for Player 1
     (1, 0)   => Piece(1, 1),  # Ant for Player 1
@@ -33,6 +40,8 @@ const Bord = Dict{Tuple{Int, Int}, Piece}(
 
 const directions_even = [(0, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0)]
 const directions_uneven = [(0, 1), (1, 1), (1, 0), (0, -1), (-1, 0), (-1, 1)]
+
+is_selected = selected(false,(0,0))
 
 function HexPoints(center::Tuple{Int,Int})
     theta = LinRange(0,2*pi,7) 
@@ -99,8 +108,8 @@ function place(HexCoord::Tuple{Int, Int},Piece::Piece) #input in hexcoord
     #pic = Actor(string(Piece.soort)*".png", scale=[1/8,1/8], position =  Rect(Abs[1]-32,Abs[2]-32,512,512)) #de ingebouwde functie center gaat kapot bij scaling
 end
 
-function DrawBoard()
-    for (key, value) in Bord
+function DrawBoard(Board::Dict{Tuple{Int, Int}, Piece})
+    for (key, value) in Board
         place(key, value)
     end
 end
@@ -113,6 +122,13 @@ function approx(x,y) #kanmet collide #af
     iseven(approxx) ? approxy = floor(Int,(-y+540+sqrt(3)*25)/(50*sqrt(3))) : approxy = floor(Int,(-y+540)/(50*sqrt(3)))
     return (approxx,approxy)
 end
+
+function Reset()
+    empty!(BordOpt)
+    global is_selected
+    is_selected.bool = false
+end
+
 
 function HexCoord2AbsCoord(HexCoord::Tuple{Int, Int}) #input in hexcoord #af
     x = 1035 + 75 * HexCoord[1]
@@ -188,7 +204,7 @@ function CanMoveAnt(pos::Tuple{Int, Int})#input in hexcoord
 
         for (dx, dy) in directions
             neighbor = (current[1] + dx, current[2] + dy)
-            if !haskey(Bord, neighbor) && !(neighbor in visited) && is_slidable(current, neighbor) && is_hive_connected(current, neighbor)
+            if !haskey(Bord, neighbor) && !(neighbor in visited) && is_slidable(current, neighbor) && is_hive_connected(pos, neighbor)
                     push!(queue, neighbor)
                     push!(visited, neighbor)
             end
@@ -226,15 +242,15 @@ function CanMoveBeetle(from::Tuple{Int, Int})
     iseven(from[1]) ? directions = directions_even : directions = directions_uneven
     for (x,y) in directions
         to = (from[1] + x, from[2] + y)
-        if !(haskey(Bord, to)) && is_hive_connected(form, to)
-            if is_slidable(from,to) 
+        if !(haskey(Bord, to)) 
+            if is_slidable(from,to) && is_hive_connected(from, to)
                 push!(posibilities, to)
             end
         else 
             push!(posibilities, to)
         end
     end
-    return posibilities  # Geen legale zetten gevonden
+    return posibilities  
 end
 
 function CanMoveSpider(pos::Tuple{Int, Int})
@@ -278,9 +294,15 @@ function CanMove(HexCoord::Tuple{Int, Int},Piece::Piece) #input in hexcoord #che
     return array
 end
 
+function Move(from::Tuple{Int,Int},to::Tuple{Int,Int})
+    Bord[to] = Bord[from]
+    delete!(Bord, from)
+end
+
 # GameZero draw function
 function draw(g::Game)
-    DrawBoard()
+    DrawBoard(Bord)
+    DrawBoard(BordOpt)
     #not permantent for testing
 end
 
@@ -290,10 +312,24 @@ function on_mouse_down(g::Game,pos) #can be done with squares is easier but less
         apAbs = HexCoord2AbsCoord(ap)
         dist = sqrt((pos[1]-apAbs[1])^2+(pos[2]-apAbs[2])^2)
         if  dist < 25 * sqrt(3)
-            if haskey(Bord, ap)
-                array = CanMove(ap, Bord[ap])
-                for pos in array
-                    Bord[pos] = Piece(6,0)
+            if haskey(Bord, ap) || haskey(BordOpt, ap)
+                if  is_selected.bool
+                    if haskey(BordOpt, ap)
+                        Move(is_selected.HexCoord,ap)
+                        Reset()
+                    elseif is_selected.HexCoord == ap
+                        Reset()
+                    end
+                else
+                    array = CanMove(ap, Bord[ap])
+                    if !(array == []) 
+                        global is_selected
+                        is_selected.bool = true 
+                        is_selected.HexCoord = ap
+                    end 
+                    for possibilities in array
+                        BordOpt[possibilities] = Piece(6,0)
+                    end
                 end
             else
                 #place a piece 
