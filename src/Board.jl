@@ -1,6 +1,6 @@
 using GameZero, Colors
 
-game[].location = @__DIR__
+game[].location = @__DIR__ #fault in the GameZero code 
 
 WIDTH = 1920
 HEIGHT = 700
@@ -11,7 +11,6 @@ pic2 = Actor("2.png", scale=[1/8,1/8])
 pic3 = Actor("3.png", scale=[1/8,1/8])
 pic4 = Actor("4.png", scale=[1/8,1/8])
 pic5 = Actor("5.png", scale=[1/8,1/8])
-
 
 struct Piece
     soort::Int # 1 - 5 1:ant 2:beetle 3:grasshopper 4:queen bee 5:spider (op elkaar ziet er zo uit 123)
@@ -123,12 +122,11 @@ function approx(x,y) #kanmet collide #af
     return (approxx,approxy)
 end
 
-function Reset()
-    empty!(BordOpt)
+function Reset(Board::Dict{Tuple{Int, Int}, Piece})
+    empty!(Board)
     global is_selected
     is_selected.bool = false
 end
-
 
 function HexCoord2AbsCoord(HexCoord::Tuple{Int, Int}) #input in hexcoord #af
     x = 1035 + 75 * HexCoord[1]
@@ -136,7 +134,7 @@ function HexCoord2AbsCoord(HexCoord::Tuple{Int, Int}) #input in hexcoord #af
     return x,y
 end
 
-function is_hive_connected(exclude::Tuple{Int, Int},include::Tuple{Int, Int} = nothing) #input in hexcoord
+function is_hive_connected(exclude::Tuple{Int, Int}, include::Union{Tuple{Int, Int}, Nothing} = nothing) #input in hexcoord
     # Copy board and remove the piece we're simulating as removed
     temp_board = Dict(Bord)
     delete!(temp_board, exclude)
@@ -167,7 +165,13 @@ function is_hive_connected(exclude::Tuple{Int, Int},include::Tuple{Int, Int} = n
     return length(visited) == length(positions)
 end
 
-function is_slidable(from::Tuple{Int, Int}, to::Tuple{Int, Int}) #input in hexcoord
+function is_slidable(from::Tuple{Int, Int}, to::Tuple{Int, Int}, exclude::Union{Tuple{Int, Int}, Nothing} = nothing) #input in hexcoord
+    temp_board = Dict(Bord)
+    
+    if exclude !== nothing
+        delete!(temp_board, exclude)
+    end
+
     dx = to[1] - from[1] 
     dy = to[2] - from[2]
     iseven(from[1]) ? directions = directions_even : directions = directions_uneven
@@ -179,7 +183,7 @@ function is_slidable(from::Tuple{Int, Int}, to::Tuple{Int, Int}) #input in hexco
     left_pos = (from[1] + left[1], from[2] + left[2])
     right_pos = (from[1] + right[1], from[2] + right[2])
 
-    return !(haskey(Bord, left_pos) && haskey(Bord, right_pos))
+    return !(haskey(temp_board, left_pos) && haskey(temp_board, right_pos))
 end
 
 function CanMoveQueen(from::Tuple{Int, Int}) #input in hexcoord
@@ -257,8 +261,22 @@ function CanMoveSpider(pos::Tuple{Int, Int})
 
     valid_end_positions = Set{Tuple{Int, Int}}()
 
+    function OccupiedNeighbors(pos::Tuple{Int, Int})
+        output = Set{Tuple{Int, Int}}()
+        iseven(pos[1]) ? directions = directions_even : directions = directions_uneven
+        for (dx, dy) in directions
+            neighbor = (pos[1] + dx, pos[2] + dy)
+            if haskey(Bord, neighbor)
+                push!(output, neighbor)
+            end
+        end
+        return output
+    end
+
+
     function dfs(current::Tuple{Int, Int}, path::Vector{Tuple{Int, Int}})
         if length(path) == 3
+            @info path
             push!(valid_end_positions, current)
             return
         end
@@ -266,10 +284,13 @@ function CanMoveSpider(pos::Tuple{Int, Int})
         iseven(current[1]) ? directions = directions_even : directions = directions_uneven
         for (dx, dy) in directions
             next = (current[1] + dx, current[2] + dy)
-            if !haskey(Bord, next) && !(next in path) && is_slidable(current, next) && is_hive_connected(pos,next) #moet voldoen aan lege plek - niet terug gaan in path- slidable zijn - en the hive connected houden
-                new_path = copy(path)
-                push!(new_path, next)
-                dfs(next, new_path) 
+            if !haskey(Bord, next) && !(next in path) && is_slidable(current, next, pos) && is_hive_connected(pos,next) #moet voldoen aan lege plek - niet terug gaan in path- slidable zijn - en the hive connected houden
+                intersection = intersect(OccupiedNeighbors(current), OccupiedNeighbors(next))
+                if length(intersection) >= 1 #current at least one the same occupied neighbor as the next 
+                    new_path = copy(path)
+                    push!(new_path, next)
+                    dfs(next, new_path) 
+                end
             end
         end
     end
@@ -316,9 +337,9 @@ function on_mouse_down(g::Game,pos) #can be done with squares is easier but less
                 if  is_selected.bool
                     if haskey(BordOpt, ap)
                         Move(is_selected.HexCoord,ap)
-                        Reset()
+                        Reset(BordOpt)
                     elseif is_selected.HexCoord == ap
-                        Reset()
+                        Reset(BordOpt)
                     end
                 else
                     array = CanMove(ap, Bord[ap])
